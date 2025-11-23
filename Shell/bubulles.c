@@ -9,9 +9,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-int* a;
-int n;
-
 int nb_threads(int taille_tableau) {
     if (taille_tableau <= 2) return 1;
     return taille_tableau / 2;
@@ -22,6 +19,8 @@ typedef struct {
     int thread_id;
     int num_threads;
     int *swapped;
+    int *arr;
+    int len;
 } thread_data_t;
 
 void swap(int *a, int *b) {
@@ -35,29 +34,19 @@ void* phase_thread(void* arg) {
     int phase = data->phase;
     int thread_id = data->thread_id;
     int num_threads = data->num_threads;
-    if (phase == 0) { // Indices pairs
-        int start = thread_id * 2;
-        for (int j = start; j < n - 1; j += num_threads * 2) {
-            if (a[j] > a[j + 1]) {
-                swap(&a[j], &a[j + 1]);
-                *(data->swapped) = 1;
-            }
-        }
-    } else { // Indices impairs
-        int start = thread_id * 2 + 1;
-        for (int j = start; j < n - 1; j += num_threads * 2) {
-            if (a[j] > a[j + 1]) {
-                swap(&a[j], &a[j + 1]);
-                *(data->swapped) = 1;
-            }
+    int* a = data->arr;
+    int n = data->len;
+    int start = thread_id * 2 + phase;
+    for (int j = start; j < n - 1; j += num_threads * 2) {
+        if (a[j] > a[j + 1]) {
+            swap(&a[j], &a[j + 1]);
+            *(data->swapped) = 1;
         }
     }
     return NULL;
 }
 
-void tri_bubulle(int* a_arr, int n_arr) {
-    a = a_arr;
-    n = n_arr;
+void tri_bubulle(int* a, int n) {
     int num_threads = nb_threads(n);
     printf("Tableau taille %d -> Utilisation de %d thread%s\n", n, num_threads, num_threads > 1 ? "s" : "");
 
@@ -68,25 +57,19 @@ void tri_bubulle(int* a_arr, int n_arr) {
     int iteration = 0;
     while (swapped && iteration < n) {
         swapped = 0;
-        // Phase paire
-        for (int i = 0; i < num_threads; i++) {
-            thread_data[i].phase = 0;
-            thread_data[i].thread_id = i;
-            thread_data[i].num_threads = num_threads;
-            thread_data[i].swapped = &swapped;
-            pthread_create(&threads[i], NULL, phase_thread, &thread_data[i]);
+        for (int phase = 0; phase <= 1; phase++) {
+            for (int i = 0; i < num_threads; i++) {
+                thread_data[i].phase = phase;
+                thread_data[i].thread_id = i;
+                thread_data[i].num_threads = num_threads;
+                thread_data[i].swapped = &swapped;
+                thread_data[i].arr = a;
+                thread_data[i].len = n;
+                pthread_create(&threads[i], NULL, phase_thread, &thread_data[i]);
+            }
+            for (int i = 0; i < num_threads; i++) pthread_join(threads[i], NULL);
+            iteration++;
         }
-        for (int i = 0; i < num_threads; i++) pthread_join(threads[i], NULL);
-        // Phase impaire
-        for (int i = 0; i < num_threads; i++) {
-            thread_data[i].phase = 1;
-            thread_data[i].thread_id = i;
-            thread_data[i].num_threads = num_threads;
-            thread_data[i].swapped = &swapped;
-            pthread_create(&threads[i], NULL, phase_thread, &thread_data[i]);
-        }
-        for (int i = 0; i < num_threads; i++) pthread_join(threads[i], NULL);
-        iteration++;
     }
     printf("Tri terminé en %d itérations\n", iteration);
 }
