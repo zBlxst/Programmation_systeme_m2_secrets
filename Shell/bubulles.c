@@ -46,9 +46,9 @@ void* phase_thread(void* arg) {
     return NULL;
 }
 
-void tri_bubulle(int* a, int n) {
+void tri_bubulle(int* a, int n, int verbose) {
     int num_threads = nb_threads(n);
-    printf("Tableau taille %d -> Utilisation de %d thread%s\n", n, num_threads, num_threads > 1 ? "s" : "");
+    if (verbose) printf("Array size %d -> Using %d thread%s\n", n, num_threads, num_threads > 1 ? "s" : "");
 
     pthread_t threads[num_threads];
     thread_data_t thread_data[num_threads];
@@ -71,7 +71,7 @@ void tri_bubulle(int* a, int n) {
             iteration++;
         }
     }
-    printf("Tri terminé en %d itérations\n", iteration);
+    if (verbose) printf("Sorted in %d iterations\n", iteration);
 }
 
 void print_array(int a[], int n) {
@@ -86,16 +86,16 @@ int is_sorted(int a[], int n) {
 
 void debug_is_sorted(int a[], int n) {
     if (is_sorted(a, n)) {
-        printf("Le tableau est trié.\n");
+        printf("Array is sorted.\n");
     } else {
-        printf("Le tableau n'est pas trié.\n");
+        printf("Array is not sorted.\n");
     }
 }
 
 void test_array(int a[], int n) {
-    printf("Avant: "); print_array(a, n);
-    tri_bubulle(a, n);
-    printf("Après: "); print_array(a, n);
+    printf("Before: "); print_array(a, n);
+    tri_bubulle(a, n, 1);
+    printf("After: "); print_array(a, n);
     debug_is_sorted(a, n);
     printf("\n");
 }
@@ -116,7 +116,7 @@ void test_random_array(int n, int max_value) {
 }
 
 
-int bubulles_sort_file(char* filename) {
+int bubulles_sort_file(char* filename, int verbose) {
     int fd = open(filename, O_RDONLY);
     if (fd < 0) {
         perror("Cannot open file");
@@ -158,10 +158,10 @@ int bubulles_sort_file(char* filename) {
         start_ptr = end_ptr+1;
     } while (start_ptr != end_ptr && end_ptr < file_content + file_size);
 
-    printf("Before : ");
-    print_array(array, n_numbers);
-    tri_bubulle(array, n_numbers);
-    printf("After : ");
+    if (verbose) printf("Before: ");
+    if (verbose) print_array(array, n_numbers);
+    tri_bubulle(array, n_numbers, verbose);
+    if (verbose) printf("After: ");
     print_array(array, n_numbers);
     
 

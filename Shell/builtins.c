@@ -7,6 +7,7 @@
 #include <pwd.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
 
@@ -36,7 +37,13 @@ int builtin_exit(struct cmd* cmd) {
 int builtin_bubulles(struct cmd* cmd) {
     if (!cmd->args[1]) {
         return bubulles_test();
-    } else {
-        return bubulles_sort_file(cmd->args[1]);
     }
+    if (strcmp(cmd->args[1], "-v") == 0) {
+        if (!cmd->args[2]) {
+            printf("Usage: bubulles (-v) <filename>\n");
+            return -2;
+        }
+        return bubulles_sort_file(cmd->args[2], 1);
+    }
+    return bubulles_sort_file(cmd->args[1], 0);
 }
