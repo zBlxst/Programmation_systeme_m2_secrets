@@ -1,4 +1,4 @@
 *.o
-Shell/lex.c
-Shell/parse.c
-Shell/shell
+fichiers_td/Shell/lex.c
+fichiers_td/Shell/parse.c
+fichiers_td/Shell/shell
