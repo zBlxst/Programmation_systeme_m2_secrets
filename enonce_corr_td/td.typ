@@ -27,52 +27,76 @@
 fill: rgb("#e8e8f8")
 ).with(numbering:none)
 
-#let render_correction = true
+#set heading(numbering:"1.")
+
+#let render_correction = false
 #let correction(body) = {
   if render_correction {corr[#body]}
   else {}
 }
 
-#maketitle(title: "TD Système", authors: ("Thomas Varin, Théotime Turmel, Mathias Loiseau",), date: "24 Novembre 2025")
+#show link: underline
+#maketitle(title: "TD Système", authors: ([Thomas Varin, Théotime Turmel, Mathias Loiseau\ #link("https://github.com/zBlxst/Programmation_systeme_m2_secrets")],), date: "24 Novembre 2025")
 
 = Appels système
 
 + Qu'est-ce qu'un appel système ?
- #correction[]
+ #correction[
+   Un appel système est une fonction qui peut être appelée par un programme et qui sert à utiliser les fonctions du noyau (communication avec le matériel notamment)
+ ]
 
-+ Quels sont les numéros des appels système *fork/clone*, *execve*, *pipe* et *dup2* ? À quoi servent ces appels système ?
- #correction[]
++ Sous Linux avec l'architecture x86_64, quels sont les numéros des appels système *fork/clone*, *execve*, *pipe* et *dup2* ? À quoi servent ces appels système ?
+ #correction[
+  - *Fork* (0x39) : Permet la duplication du processus. 
+  
+  - *Execve* (0x3b) : Remplace l'image du processus par celle d'un autre programme.
+  
+  - *Pipe* (0x16) : Crée un tube (pipe) bi-directionnel pour la communication entre processus.
+  
+  - *Dup2* (0x21) : Permet la création/le remplacement d'un descripteur de fichier.
+]
 
 + Qu'est-ce que les commandes "builtin" ? Pourquoi existent-elles ?
- #correction[]
+ #correction[
+   Une commande "builtin" est une commande qui est directement implémentée dans le shell. L'appel de cette dernière ne nécessite pas forcément la création d'un nouveau processus. Certaines commandes modifie le comportement du shell lui-même (export, cd, ...) et ne peuvent être réalisées par un autre processus.
+ ]
 
 = Programmation d'un shell
 #set raw(lang:"sh", block:true)
 
-+ + Que fait la commande strace ? Lancer *\/bin/bash* aved l'outil *strace* (en redirigeant la sortie d'erreur dans la sortie standard)
-   #correction[]
++ + Que fait la commande *strace* ? Lancer *\/bin/bash* avec l'outil *strace* (en redirigeant la sortie d'erreur dans la sortie standard)
+   #correction[
+     La commande *strace* permet d'afficher l'ensemble des appels système réalisés par un processus. En lançant la commande `strace /bin/bash`, on remarque un nombre très conséquent d'appels système.
+   ]
   
-  +  Lancer les commandes suivantes (en tapant des commandes dans le shell) : `strace --follow-fork bash 2>\&1 | grep execve` et `strace bash 2>\&1 | grep execve`. Que remarque-t-on ?
-     #correction[]
+  +  Lancer les commandes suivantes (en tapant des commandes dans le shell) : `strace --follow-fork bash 2>\&1 | grep execve` et `strace bash 2>\&1 | grep execve`. Que fait l'option `--follow-fork` ?
+     #correction[
+       On remarque qu'avec l'option `--follow-fork`, la commande *strace* trace le fils après un appel système fork et détecte les appels système *execve*.
+     ]
 
   + Lancer les commandes suivantes (en tapant des commandes dans le shell) : `strace --follow-fork bash 2>\&1 | grep clone` et `strace bash 2>\&1 | grep clone`. Que remarque-t-on ? 
-     #correction[]
+     #correction[
+       On remarque que sans l'option `--follow-fork`, la commande *strace* trace le père après un appel système fork et détecte les appels système *clone*.
+     ]
   Pour la suite du TP, nous utiliserons l'appel système *fork* au lieu de *clone*.
 
-+ + En utilisant les appels systèmes *fork* et *execve*, implémenter le cas *C_PLAIN*.
-     #correction[]
++ + En utilisant les appels système *fork* et *execve*, implémenter le cas *C_PLAIN*.
+     #correction[#link("https://github.com/zBlxst/Programmation_systeme_m2_secrets/blob/main/fichiers_td/Shell/main.c")[Voir code]]
 
   + Implémenter les cas *C_AND*, *C_OR*, *C_SEQ* et *C_VOID*.
-       #correction[]
+       #correction[#link("https://github.com/zBlxst/Programmation_systeme_m2_secrets/blob/main/fichiers_td/Shell/main.c")[Voir code]]
 
   + En utilisant l’appel système *pipe*, implémenter le cas *C_PIPE*.
-       #correction[]
+       #correction[#link("https://github.com/zBlxst/Programmation_systeme_m2_secrets/blob/main/fichiers_td/Shell/main.c")[Voir code]]
 
 + En utilisant l’appel système *dup2*, implémenter les 4 cas de la fonction *apply redirects*.
-     #correction[]
+     #correction[#link("https://github.com/zBlxst/Programmation_systeme_m2_secrets/blob/main/fichiers_td/Shell/main.c")[Voir code]]
 
 + Expliquer pourquoi la commande *cd* ne peut pas être implémentée dans un binaire et appelée avec *execve*. Implémenter la commande *cd* dans la fonction.
-     #correction[]
+     #correction[
+       La commande *cd* modifie l'état du shell (précisément son répertoire courant). Si cette dernière était implémentée dans un binaire, elle modifierait le répertoire courant du processus fils et non du processus père.
+       #correction[#link("https://github.com/zBlxst/Programmation_systeme_m2_secrets/blob/main/fichiers_td/Shell/builtins.c")[Voir code]]
+     ]
 
 = Multithreading
 #set raw(lang:"C", block:true)
@@ -158,13 +182,16 @@ void* phase_thread(void* arg) {
   ]
 
 = Set-user-ID bit
-+ Que se passe-t'il lorsqu'un utilisateur exécute un programme marqué avec le bit Set-user-ID ?
+#set raw(lang:"sh", block:true)
++ Que se passe-t-il lorsqu'un utilisateur exécute un programme marqué avec le bit *Set-user-ID* ?
   #correction[Son euid (Effective User ID) devient celle du propriétaire du fichier.]
 
-+ Quelles commandes faut-il taper afin d'activer/désactiver le bit Set-User-ID pour un fichier exécutable ?
-  #correction[La commande ``` chmod u+s filename``` active le bit SUID tandis que ``` chmod u-s filename ``` le désactive.]
++ Quelles commandes faut-il taper afin d'activer/désactiver le bit *Set-User-ID* pour un fichier exécutable ?
+  #correction[La commande `chmod u+s filename` active le bit SUID tandis que `chmod u-s filename` le désactive.]
 
+#set raw(lang:"C", block:true)
 + Copiez le code C suivant dans un fichier psudo.c et sauvegardez le fichier Makefile donné juste après
+
 
   psudo.c
     ``` #include <stdio.h>
@@ -191,7 +218,7 @@ void* phase_thread(void* arg) {
     return 0;
   }
   ```
-
+  #set raw(lang:"makefile", block:true)
   Makefile
   ```
   CC=gcc
@@ -203,7 +230,8 @@ void* phase_thread(void* arg) {
   	chmod u+s psudo
   	sudo -k
   ```
-    + Que fait la commade sudo -k ?
+  #set raw(lang:"sh", block:true)
+    + Que fait la commade `sudo -k` ?
       #correction[Normalement, après un sudo réussi par un utilisateur, un timer s'exécute. Tant que ce timer n'atteint pas 0, toute autre commande sudo du même utilisateur dans la même session ne nécessitera pas de taper de mot de passe.
   
       ``` sudo -k ``` permet de supprimer les infos d'authentification. Le prochain appel à une commande privilégiée nécessitera donc de retaper le mot de passe. ]
